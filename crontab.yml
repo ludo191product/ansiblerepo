@@ -1,0 +1,21 @@
+---
+- name: Create a cron Job
+  hosts: all
+  become: true
+  tasks:
+    - name: Copy the script cfile
+      ansible.builtin.copy:
+        src: /tmp/cfile.sh
+        dest: /tmp/cfile.sh
+        mode: '0755'
+
+    - name: Schedule cron
+      ansible.builtin.cron:
+        name: "This job is a scheduled by Ansible"
+        minute: "0"
+        hour: "7"
+        day: "*"
+        month: "*"
+        weekday: "4"
+        user: root
+        job: "/tmp/cfile.sh"

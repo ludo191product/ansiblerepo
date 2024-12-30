@@ -1,0 +1,27 @@
+---
+- name: Configuration du serveur HTTP
+  hosts: VM4 
+  become: true
+  tasks:
+    - name: Installer le package HTTP
+      ansible.builtin.yum:
+        name: httpd
+        state: present
+
+    - name: Démarrer et activer le service HTTPD
+      ansible.builtin.service:
+        name: httpd
+        state: started
+        enabled: true
+
+    - name: Ouvrir le port HTTPD dans le pare-feu
+      ansible.builtin.firewalld:
+        port: 80/tcp
+        permanent: true
+        state: enabled
+
+    - name: Redémarrer le service Firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: restarted
+

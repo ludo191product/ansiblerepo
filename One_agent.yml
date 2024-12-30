@@ -1,0 +1,55 @@
+---
+- name: Install Dynatrace OneAgent
+  hosts: localhost 
+  become: yes
+
+  vars:
+    dynatrace_url: "https://dtk94502.live.dynatrace.com/api/v1/deployment/installer/agent/unix/default/latest?arch=x86"
+    api_token: "dt0c01.S7JESDKOWJGSMNAIQFHNHCMG.HHBEKVZEIPK4UAWV7QWUGXKOFH44UJY3Q464IPXD"
+    installer_name: "Dynatrace-OneAgent-Linux.sh"
+    cert_url: "https://ca.dynatrace.com/dt-root.cert.pem"
+    monitoring_mode: "fullstack"
+    log_content_access: true
+
+  tasks:
+    - name: Download the Dynatrace installer
+      ansible.builtin.get_url:
+        url: "{{ dynatrace_url }}"
+        dest: "/tmp/{{ installer_name }}"
+        headers:
+          Authorization: "Api-Token {{ api_token }}"
+      register: download_result
+
+    - name: Verify installer download
+      ansible.builtin.stat:
+        path: "/tmp/{{ installer_name }}"
+      register: installer_stat
+
+    - name: Fail if installer not downloaded
+      ansible.builtin.fail:
+        msg: "Failed to download the Dynatrace installer."
+      when: not installer_stat.stat.exists
+
+    - name: Download the Dynatrace root certificate
+      ansible.builtin.get_url:
+        url: "{{ cert_url }}"
+        dest: "/tmp/dt-root.cert.pem"
+
+    - name: Verify the installer signature
+      ansible.builtin.shell: |
+        openssl cms -verify -CAfile /tmp/dt-root.cert.pem \
+        -inform PEM -binary -in /tmp/{{ installer_name }}
+      register: verify_signature
+      failed_when: "'Verification failure' in verify_signature.stderr"
+
+    - name: Run the Dynatrace installer
+      ansible.builtin.command:
+        cmd: "/bin/sh /tmp/{{ installer_name }} --set-monitoring-mode={{ monitoring_mode }} --set-app-log-content-access={{ log_content_access | lower }}"
+
+    - name: Cleanup temporary files
+      ansible.builtin.file:
+        path: "/tmp/{{ item }}"
+        state: absent
+      loop:
+        - "{{ installer_name }}"
+        - "dt-root.cert.pem"

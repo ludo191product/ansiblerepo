@@ -1,0 +1,73 @@
+---
+- name: Playbook to automate Tomcat installation
+  hosts: all
+  become: true
+  vars:
+    tomcat_version: "10.1.34"
+    tomcat_base_url: "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.34/bin/"
+    tomcat_archive: "apache-tomcat-10.1.34.tar.gz"
+    tomcat_install_dir: "/opt/tomcat"
+  tasks:
+    - name: Ensure the Tomcat installation directory exists
+      ansible.builtin.file:
+        path: "{{ tomcat_install_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      register: tomcat_dir_status
+
+    - name: Check if Tomcat archive already exists
+      ansible.builtin.stat:
+        path: "{{ tomcat_install_dir }}/apache-tomcat-10.1.34.tar.gz"
+      register: tomcat_archive_stat
+
+    - name: Download Tomcat archive if not already present
+      ansible.builtin.get_url:
+        url: "https://dlcdn.apache.org/tomcat/tomcat-10/v10.1.34/bin/apache-tomcat-10.1.34.tar.gz"
+        dest: "{{ tomcat_install_dir }}"
+        mode: '0644'
+      when: not tomcat_archive_stat.stat.exists
+
+    - name: Check if Tomcat is already extracted
+      ansible.builtin.stat:
+        path: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}"
+      register: tomcat_extracted_stat
+
+    - name: Extract Tomcat archive if not already extracted
+      ansible.builtin.unarchive:
+        src: "{{ tomcat_install_dir }}/{{ tomcat_archive }}"
+        dest: "{{ tomcat_install_dir }}"
+        remote_src: yes
+      when: not tomcat_extracted_stat.stat.exists
+
+    - name: Find all .sh scripts in the bin directory
+      ansible.builtin.find:
+        paths: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}/bin"
+        patterns: "*.sh"
+        recurse: no
+      register: tomcat_scripts
+
+    - name: Ensure all Tomcat scripts are executable
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        mode: '0755'
+      loop: "{{ tomcat_scripts.files }}"
+
+    - name: Start Tomcat service
+      ansible.builtin.command:
+        cmd: "{{ tomcat_install_dir }}/apache-tomcat-{{ tomcat_version }}/bin/startup.sh"
+
+    - name: Verify Tomcat is running
+      ansible.builtin.uri:
+        url: http://localhost:8080
+        return_content: no
+      register: tomcat_status
+      retries: 5
+      delay: 5
+      until: tomcat_status.status == 200
+
+    - name: Provide final status message
+      ansible.builtin.debug:
+        msg: "Tomcat {{ tomcat_version }} is installed and running successfully."
+

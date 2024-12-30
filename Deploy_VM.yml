@@ -1,0 +1,26 @@
+---
+- name: Desinstallation OneAgent
+  hosts: all
+  roles:
+  - desinstall 
+
+- name: Installation Java
+  hosts: all
+  roles:
+  - InstallJava
+
+- name: Installation OneAgent
+  hosts: all 
+  roles:
+    - dynatrace
+
+- name: Installation easytravel
+  hosts: all
+  roles:
+  - easytravel
+
+- name: Demarrage de l'application easytravel
+  hosts: all
+  roles:
+  - weblauncher  
+

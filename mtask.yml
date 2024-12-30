@@ -1,0 +1,9 @@
+---
+- name: Running 2 tasks
+  hosts: localhost
+  
+  tasks:
+  - name: Test connectivity
+    ping:
+  - name:
+    debug: msg="Hello World"

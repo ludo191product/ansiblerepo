@@ -1,0 +1,54 @@
+---
+- name: Gestion de l'application Easytravel
+  hosts: all
+  vars:
+    ports:
+      - 8094
+      - 8080
+  tasks:
+    - name: Vérification et arrêt du processus existant pour chaque item
+      ansible.builtin.shell: |
+        ps -ef | grep weblauncher.jar | head -n 1 | awk '{print $2}' | xargs -r kill -9
+      when: item == "easytravel{{ inventory_hostname[-1] }}"
+      with_items:
+        - easytravel1
+        - easytravel2
+        - easytravel3
+        - easytravel4
+        - easytravel5
+        - easytravel6
+      ignore_errors: yes
+      become: yes
+
+    - name: Ouverture des ports nécessaires pour chaque item
+      ansible.builtin.firewalld:
+        port: "{{ item }}/tcp"
+        permanent: yes
+        state: enabled
+      with_items: "{{ ports }}"
+      when: inventory_hostname in ["easytravel1", "easytravel2", "easytravel3", "easytravel4", "easytravel5", "easytravel6"]
+      become: yes
+      notify:
+        - Reload firewalld
+
+    - name: Démarrage du launcher pour chaque item
+      ansible.builtin.shell: |
+        nohup ./weblauncher.sh &
+      args:
+        chdir: "/home/{{ item }}/easytravel-2.0.0-x64/weblauncher"
+      when: item == "easytravel{{ inventory_hostname[-1] }}"
+      with_items:
+        - easytravel1
+        - easytravel2
+        - easytravel3
+        - easytravel4
+        - easytravel5
+        - easytravel6
+      become: yes
+
+  handlers:
+    - name: Reload firewalld
+      ansible.builtin.service:
+        name: firewalld
+        state: reloaded
+

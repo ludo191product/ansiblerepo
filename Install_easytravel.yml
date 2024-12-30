@@ -1,0 +1,44 @@
+---
+- name: Copy file from local to remote clients
+  hosts: VM4
+  tasks:
+    - name: Copy file
+      become: true
+      copy:
+        src: /exploit/easytravel1/dynatrace-easytravel-linux-x86_64.jar
+        dest: /home/easytravel4/
+        owner: easytravel4
+        group: easytravel4
+
+- name: Install Java on Red Hat 9.5
+  hosts: VM4
+  become: yes
+  tasks:
+    - name: Ensure the system is up-to-date
+      yum:
+        name: "*"
+        state: latest
+
+    - name: Install OpenJDK 11
+      yum:
+        name: java-11-openjdk
+        state: present
+
+    - name: Verify Java installation
+      command: java -version
+      register: java_version_output
+      ignore_errors: yes
+
+    - name: Display Java version
+      debug:
+        msg: "{{ java_version_output.stdout_lines }}"
+- name: Installation of easytravel
+  hosts: VM4
+  tasks:
+
+    - name: Exécuter le script interactif sur l'hôte distant
+      shell: "/usr/bin/java -jar /home/easytravel4/dynatrace-easytravel-linux-x86_64.jar -y" 
+      become: true
+      become_user: easytravel4
+      args:
+        chdir: /home/easytravel4  

@@ -1,0 +1,7 @@
+---
+- name: Exécuter uniquement la désinstallation de OneAgent
+  hosts: localhost 
+  become: yes
+  roles:
+    - role: oneagent
+      tags: uninstall

@@ -1,0 +1,20 @@
+- name: Exécuter le script interactif avec Ansible
+  hosts: VM4 
+  become: yes
+  tasks:
+    - name: Vérifier que Java est installé
+      ansible.builtin.shell: which java
+      register: java_check
+      failed_when: java_check.rc != 0
+      changed_when: false
+
+    - name: Lancer le script interactif
+      ansible.builtin.expect:
+        command: "/usr/bin/java -jar /home/easytravel4/dynatrace-easytravel-linux-x86_64.jar"
+        responses:
+          'Do will be installed to /home/easytravel4/easytravel-2.0.0-x64. Do you want to install to this directory? (Y/N)?': 'Y'
+        timeout: 60     
+      args:
+        chdir: /home/easytravel4
+      when: java_check.rc == 0
+

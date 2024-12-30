@@ -1,0 +1,18 @@
+---
+- name: Demarrer Easytravel application
+  hosts: all
+  tasks:
+    - name: Lancement du launcher
+      ansible.builtin.shell: |
+        nohup ./weblauncher.sh &
+      args:
+        chdir: "/home/{{ item }}/easytravel-2.0.0-x64/weblauncher"
+      become: yes
+      when: item == "easytravel{{ inventory_hostname[-1] }}"  
+      with_items:
+        - easytravel1
+        - easytravel2
+        - easytravel3
+        - easytravel4
+        - easytravel5
+        - easytravel6
