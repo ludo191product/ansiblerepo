@@ -1,0 +1,33 @@
+---
+- name: Ajouter un utilisateur avec privilèges root
+  hosts: all
+  become: yes
+  tasks:
+    - name: Ajouter l'utilisateur ansible
+      ansible.builtin.user:
+        name: ansible
+        state: present
+        shell: /bin/bash
+        create_home: yes
+
+    - name: Ajouter l'utilisateur ansible au groupe sudo (Debian/Ubuntu)
+      ansible.builtin.user:
+        name: ansible
+        groups: sudo
+        append: yes
+      when: ansible_facts['os_family'] == "Debian"
+
+    - name: Ajouter l'utilisateur ansible au groupe wheel (RedHat/CentOS)
+      ansible.builtin.user:
+        name: ansible
+        groups: wheel
+        append: yes
+      when: ansible_facts['os_family'] == "RedHat"
+
+    - name: Configurer sudo sans mot de passe pour l'utilisateur ansible
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/ansible
+        create: yes
+        mode: '0440'
+        line: "ansible ALL=(ALL) NOPASSWD: ALL"
+
